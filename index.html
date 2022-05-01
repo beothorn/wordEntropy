@@ -5,8 +5,103 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=<device-width>, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+            border: inherit;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #game{
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            height: 100%;
+        }
+
+        .cell{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid black;
+            font-size: 1em;
+        }
+
+        .selected{
+            background-color: #0f740f;
+        }
+    </style>
 </head>
 <body>
-    Hello
+    <div id="game">
+    </div>
+<script>
+    function getRandomChar() {
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        return chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    let allChars = [];
+    let allSelected = new Set();
+
+    function deselectAll(){
+        allSelected.clear();
+        const allSelectedElements = document.querySelectorAll('.selected');
+        allSelectedElements.forEach(element => {
+            element.classList.remove('selected');
+        });
+    }
+
+    const gameElement = document.getElementById('game');
+    for(let i = 0; i < (10 * 10); i++){
+        allChars[i] = getRandomChar();
+        const div = document.createElement('div');
+        div.classList.add('cell');
+        div.textContent = allChars[i];
+        div.setAttribute('data-field', i);
+        div.setAttribute('data-selected', "false");
+        div.addEventListener('click', function(){
+            const field = parseInt(this.getAttribute('data-field'));
+            const selected = this.getAttribute('data-selected');
+
+            if(selected === "true"){
+                this.classList.remove('selected');
+                div.setAttribute('data-selected', "false");
+                allSelected.delete(field);
+            }else{
+                div.setAttribute('data-selected', "true");
+                this.classList.add('selected');
+                allSelected.add(field);
+            }
+            console.log(field);
+        });
+        gameElement.appendChild(div);
+    }
+
+    // on key press
+    document.addEventListener('keydown', function(e){
+        let selectedChars = [];
+        for(let c of allSelected){
+            selectedChars.push(allChars[c].charCodeAt(0));
+        }
+        selectedChars.sort();
+        const key = e.key.toUpperCase();
+        const keyCode = key.charCodeAt(0);
+        if(keyCode > selectedChars[0] && keyCode < selectedChars[selectedChars.length - 1]){
+            for(let c of allSelected){
+                allChars[c] = key;
+                const element = document.querySelector(`[data-field="${c}"]`);
+                element.textContent = key;
+            }
+            deselectAll();
+        }
+        console.log(selectedChars);
+    });
+</script>
 </body>
 </html>
