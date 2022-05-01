@@ -92,7 +92,7 @@
         selectedChars.sort();
         const key = e.key.toUpperCase();
         const keyCode = key.charCodeAt(0);
-        if(keyCode > selectedChars[0] && keyCode < selectedChars[selectedChars.length - 1]){
+        if(keyCode >= selectedChars[0] && keyCode <= selectedChars[selectedChars.length - 1]){
             for(let c of allSelected){
                 allChars[c] = key;
                 const element = document.querySelector(`[data-field="${c}"]`);
