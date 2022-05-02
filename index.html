@@ -19,8 +19,8 @@
 
         #game{
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(8, 1fr);
             height: 100%;
         }
 
@@ -39,10 +39,29 @@
 </head>
 <body>
     <div id="game">
+        <div style="grid-column-start: span 3;background-color: #95a9ff;">
+            <select id="charSelector"></select>
+            <button onclick="replaceAllWithSelectedChar()">Replace</button>
+        </div>
+        <div style="grid-column-start: span 4;background-color: #377437;">
+            <span>Words found:</span>
+            <ul>
+            </ul>
+        </div>
     </div>
 <script>
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    const charSelector = document.getElementById("charSelector");
+    for(let c of chars){
+        let option = document.createElement("option");
+        option.value = c;
+        option.innerText = c;
+        charSelector.appendChild(option);
+    }
+
     function getRandomChar() {
-        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         return chars[Math.floor(Math.random() * chars.length)];
     }
 
@@ -54,11 +73,12 @@
         const allSelectedElements = document.querySelectorAll('.selected');
         allSelectedElements.forEach(element => {
             element.classList.remove('selected');
+            element.setAttribute('data-selected', "false");
         });
     }
 
     const gameElement = document.getElementById('game');
-    for(let i = 0; i < (10 * 10); i++){
+    for(let i = 0; i < (7 * 7); i++){
         allChars[i] = getRandomChar();
         const div = document.createElement('div');
         div.classList.add('cell');
@@ -83,16 +103,15 @@
         gameElement.appendChild(div);
     }
 
-    // on key press
-    document.addEventListener('keydown', function(e){
+    function replaceAllWithChar(key){
         let selectedChars = [];
         for(let c of allSelected){
             selectedChars.push(allChars[c].charCodeAt(0));
         }
         selectedChars.sort();
-        const key = e.key.toUpperCase();
+
         const keyCode = key.charCodeAt(0);
-        if(keyCode >= selectedChars[0] && keyCode <= selectedChars[selectedChars.length - 1]){
+        if(keyCode > selectedChars[0] && keyCode < selectedChars[selectedChars.length - 1]){
             for(let c of allSelected){
                 allChars[c] = key;
                 const element = document.querySelector(`[data-field="${c}"]`);
@@ -101,7 +120,17 @@
             deselectAll();
         }
         console.log(selectedChars);
+    }
+
+    document.addEventListener('keydown', function(e){
+        const key = e.key.toUpperCase();
+        replaceAllWithChar(key);        
     });
+
+    function replaceAllWithSelectedChar(){
+        const key = charSelector.value;
+        replaceAllWithChar(key); 
+    }
 </script>
 </body>
 </html>
