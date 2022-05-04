@@ -53,28 +53,41 @@
 
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    const charSelector = document.getElementById("charSelector");
-    for(let c of chars){
-        let option = document.createElement("option");
-        option.value = c;
-        option.innerText = c;
-        charSelector.appendChild(option);
-    }
-
     function getRandomChar() {
         return chars[Math.floor(Math.random() * chars.length)];
     }
 
     let allChars = [];
-    let allSelected = new Set();
+    let selected1 = -1;
+    let selected2 = -1;
 
     function deselectAll(){
-        allSelected.clear();
+        selected1 = -1;
+        selected2 = -1;
         const allSelectedElements = document.querySelectorAll('.selected');
         allSelectedElements.forEach(element => {
             element.classList.remove('selected');
-            element.setAttribute('data-selected', "false");
         });
+    }
+
+    function updateAvailableChars(){
+        const selector = document.getElementById("charSelector");
+        // clean selector
+        while(selector.firstChild){
+            selector.removeChild(selector.firstChild);
+        }
+        for(let c of chars){
+            const cAsInt = c.charCodeAt(0);
+            if(
+                cAsInt > allChars[selected1]?.charCodeAt(0) && cAsInt < allChars[selected2]?.charCodeAt(0)
+                || cAsInt < allChars[selected1]?.charCodeAt(0) && cAsInt > allChars[selected2]?.charCodeAt(0)
+            ){
+                let option = document.createElement("option");
+                option.value = c;
+                option.innerText = c;
+                selector.appendChild(option);
+            }
+        }
     }
 
     const gameElement = document.getElementById('game');
@@ -84,42 +97,66 @@
         div.classList.add('cell');
         div.textContent = allChars[i];
         div.setAttribute('data-field', i);
-        div.setAttribute('data-selected', "false");
         div.addEventListener('click', function(){
             const field = parseInt(this.getAttribute('data-field'));
-            const selected = this.getAttribute('data-selected');
-
-            if(selected === "true"){
+            const selected = selected1 === field || selected2 === field;
+            
+            if(field === selected1){
+                selected1 = selected2;
+                if(selected2 !== -1){
+                    selected2 = -1;
+                }
+                updateAvailableChars()
                 this.classList.remove('selected');
-                div.setAttribute('data-selected', "false");
-                allSelected.delete(field);
-            }else{
-                div.setAttribute('data-selected', "true");
-                this.classList.add('selected');
-                allSelected.add(field);
+                return;
             }
-            console.log(field);
+            if(field === selected2){
+                selected2 = -1;
+                updateAvailableChars()
+                this.classList.remove('selected');
+                return;
+            }
+            if(selected1 === -1){
+                selected1 = field;
+                updateAvailableChars()
+                this.classList.add('selected');
+                return;
+            }
+            if(selected2 === -1){
+                selected2 = field;
+                updateAvailableChars();
+                this.classList.add('selected');
+                return;
+            }
+            const element2 = document.querySelector(`[data-field="${selected2}"]`);
+            element2.classList.remove('selected');
+            selected2 = field;
+            updateAvailableChars();
+            this.classList.add('selected');
+            return;
         });
         gameElement.appendChild(div);
     }
 
     function replaceAllWithChar(key){
-        let selectedChars = [];
-        for(let c of allSelected){
-            selectedChars.push(allChars[c].charCodeAt(0));
+        if(selected1 === -1 || selected2 === -1){
+            return;
         }
-        selectedChars.sort();
 
         const keyCode = key.charCodeAt(0);
-        if(keyCode > selectedChars[0] && keyCode < selectedChars[selectedChars.length - 1]){
-            for(let c of allSelected){
-                allChars[c] = key;
-                const element = document.querySelector(`[data-field="${c}"]`);
-                element.textContent = key;
-            }
+        if(
+            keyCode > allChars[selected1].charCodeAt(0) && keyCode < allChars[selected2].charCodeAt(0)
+            || keyCode > allChars[selected2].charCodeAt(0) && keyCode < allChars[selected1].charCodeAt(0)
+        ){
+            const element1 = document.querySelector(`[data-field="${selected1}"]`);
+            const element2 = document.querySelector(`[data-field="${selected2}"]`);
+            element1.textContent = key;
+            element2.textContent = key;
+            allChars[selected1] = key;
+            allChars[selected2] = key;
             deselectAll();
+            updateAvailableChars();
         }
-        console.log(selectedChars);
     }
 
     document.addEventListener('keydown', function(e){
