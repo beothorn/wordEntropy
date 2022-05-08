@@ -53,7 +53,7 @@
         }
 
         #wordsFoundContainer {
-            overflow-y: scroll;
+            overflow-y: auto;
             height: 6rem;
         }
 
@@ -82,19 +82,46 @@
     <div id="game">
         <div id="charSelectorHeader">
             <span id="help" onclick="showHelp()">?</span>
+            
             <select id="charSelector"></select>
             <button onclick="replaceAllWithSelectedChar()">Replace</button>
         </div>
         <div id="wordsFoundHeader">
-            <span>Words found:</span>
+            <span id="share" onclick="share()">share</span><span>Words found:</span>
             <div id="wordsFoundContainer">
                 <ul id="wordsFound">
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
+                    <li>FOO</li>
                 </ul>
             </div>
         </div>
     </div>
 <script src="words_en.js"></script>
 <script>
+
+    function getDateAsYearMonthDay(){
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = date.getMonth() + 1;
+        var day = date.getDate();
+        return year + "-" + month + "-" + day;
+    }
+
+    function share(){
+        const shareData = {
+            title: "Words found",
+            text: "Words found on "+ getDateAsYearMonthDay()
+        }
+        navigator.share(shareData);
+    }
 
     function showHelp(){
         const helpDialog = document.getElementById("helpDialog");
