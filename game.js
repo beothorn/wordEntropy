@@ -1,10 +1,10 @@
-const wordSize = 7;
+const wordSize = 5;
 const minimumWordLength = 4;
+const requiredSelectionCount = 5;
 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const byId = id => document.getElementById(id);
 let allChars = [];
-let selected1 = -1;
-let selected2 = -1;
+const selectedTiles = new Set();
 let wordsFound = new Set();
 let score = 0;
 let moves = 0;
@@ -12,8 +12,8 @@ let ended = false;
 const cells = [];
 function getRandomChar() { return chars[Math.floor(Math.random() * chars.length)]; }
 
-// Lines 0–6 are rows (left to right); lines 7–13 are columns (top to bottom).
-// Each line uses ten Set lookups, independent of dictionary size.
+// Lines 0–4 are rows (left to right); lines 5–9 are columns (top to bottom).
+// Each line uses three Set lookups, independent of dictionary size.
 const allLines = Array.from({ length: wordSize * 2 }, (_, line) => line);
 function findLineWords(board, line) {
     const vertical = line >= wordSize;
@@ -70,14 +70,18 @@ function removeStartingWords(board, randomLetter = getRandomChar) {
     throw new Error('Dictionary has no safe fallback board.');
 }
 function setStatus(message) { byId('status').textContent = message; }
-function deselectAll() { selected1 = selected2 = -1; }
+function deselectAll() { selectedTiles.clear(); }
+function selectedLetterRange() {
+    const letters = [...selectedTiles].map(index => allChars[index]).sort();
+    return [letters[0], letters[letters.length - 1]];
+}
 function updateAvailableChars() {
     const selector = byId('charSelector');
     selector.replaceChildren();
-    const pair = [allChars[selected1], allChars[selected2]].sort();
-    if (selected1 !== -1 && selected2 !== -1 && !ended) {
+    const [smallest, biggest] = selectedLetterRange();
+    if (selectedTiles.size === requiredSelectionCount && !ended) {
         for (const letter of chars) {
-            if (letter > pair[0] && letter < pair[1]) {
+            if (letter > smallest && letter < biggest) {
                 const option = document.createElement('option');
                 option.value = option.textContent = letter;
                 selector.appendChild(option);
@@ -92,22 +96,22 @@ function updateAvailableChars() {
     }
     byId('replace').disabled = selector.disabled;
     cells.forEach((cell, index) => {
-        const selected = index === selected1 || index === selected2;
+        const selected = selectedTiles.has(index);
         cell.classList.toggle('selected', selected);
         cell.setAttribute('aria-pressed', String(selected));
     });
-    if (!ended) setStatus(selected1 === -1 || selected2 === -1 ? 'Select two tiles.'
-        : selector.disabled ? 'No letter lies between these two. Try another pair.'
-        : `Turn ${allChars[selected1]} and ${allChars[selected2]} into a letter between them.`);
+    if (!ended) setStatus(selectedTiles.size < requiredSelectionCount
+        ? `Select ${requiredSelectionCount} tiles (${selectedTiles.size}/${requiredSelectionCount}).`
+        : selector.disabled ? 'No letter lies between the smallest and biggest letters. Deselect a tile to try another selection.'
+        : `Replace all ${requiredSelectionCount} tiles with a letter strictly between ${smallest} and ${biggest}.`);
 }
 function selectTile(index) {
-    if (ended) return;
-    if (index === selected1) { selected1 = selected2; selected2 = -1; }
-    else if (index === selected2) selected2 = -1;
-    else if (selected1 === -1) selected1 = index;
-    else selected2 = index;
+    if (ended || !Number.isInteger(index) || index < 0 || index >= cells.length) return;
+    if (selectedTiles.has(index)) selectedTiles.delete(index);
+    else if (selectedTiles.size < requiredSelectionCount) selectedTiles.add(index);
     updateAvailableChars();
 }
+
 function updateStats() {
     byId('score').textContent = score;
     byId('wordCount').textContent = wordsFound.size;
@@ -129,11 +133,11 @@ function checkForWords(lines = allLines) {
     return discovered;
 }
 function replaceAllWithChar(key) {
-    if (ended || !/^[A-Z]$/.test(key) || selected1 === -1 || selected2 === -1) return;
-    const pair = [allChars[selected1], allChars[selected2]].sort();
-    if (key <= pair[0] || key >= pair[1]) return;
-    const lines = linesForTiles([selected1, selected2]);
-    for (const index of [selected1, selected2]) {
+    if (ended || !/^[A-Z]$/.test(key) || selectedTiles.size !== requiredSelectionCount) return;
+    const [smallest, biggest] = selectedLetterRange();
+    if (key <= smallest || key >= biggest) return;
+    const lines = linesForTiles(selectedTiles);
+    for (const index of selectedTiles) {
         allChars[index] = key;
         cells[index].textContent = key;
         cells[index].setAttribute('aria-label', `${key}, row ${Math.floor(index / wordSize) + 1}, column ${index % wordSize + 1}`);
@@ -142,7 +146,7 @@ function replaceAllWithChar(key) {
     }
     moves++;
     deselectAll(); updateAvailableChars();
-    const found = checkForWords(lines); // Only changed rows and columns (at most four lines).
+    const found = checkForWords(lines); // Only rows and columns containing selected tiles.
     setStatus(found.length ? `Found ${found.join(', ')}.` : '');
 }
 function replaceAllWithSelectedChar() { replaceAllWithChar(byId('charSelector').value); }
@@ -165,7 +169,7 @@ function startGame() {
     const replaying = byId('scoreDialog').open || ended;
     if (byId('scoreDialog').open) closeScore();
     ended = false; wordsFound = new Set(); score = moves = 0; deselectAll();
-    allChars = removeStartingWords(Array.from({ length: 49 }, getRandomChar));
+    allChars = removeStartingWords(Array.from({ length: wordSize * wordSize }, getRandomChar));
     byId('wordsFound').replaceChildren();
     cells.forEach((cell, index) => {
         cell.textContent = allChars[index]; cell.disabled = false; cell.classList.remove('changed');
@@ -176,7 +180,7 @@ function startGame() {
     if (replaying) cells[0].focus();
 }
 async function share() {
-    const text = `WordEntropy: ${score} points, ${wordsFound.size} words, ${moves} moves${ended ? ' — game complete' : ''}.`;
+    const text = `WordEntropy: ${score} points, ${wordsFound.size} words, ${moves} moves${ended ? ' — game complete' : ''}.\nhttps://www.isageek.com.br/wordEntropy/`;
     const report = message => { setStatus(message); byId('shareStatus').textContent = message; };
     try {
         if (navigator.share) await navigator.share({ title: 'WordEntropy', text });
@@ -185,7 +189,7 @@ async function share() {
         } else report(text);
     } catch (error) { if (error.name !== 'AbortError') report(text); }
 }
-for (let index = 0; index < 49; index++) {
+for (let index = 0; index < wordSize * wordSize; index++) {
     const cell = document.createElement('button'); cell.type = 'button'; cell.className = 'cell';
     cell.addEventListener('click', () => selectTile(index));
     cell.addEventListener('animationend', () => cell.classList.remove('changed'));
@@ -197,4 +201,5 @@ document.addEventListener('keydown', event => {
     if (/^[a-z]$/i.test(event.key)) replaceAllWithChar(event.key.toUpperCase());
 });
 byId('scoreDialog').addEventListener('close', () => { if (ended) byId('restart').focus(); });
+byId('selectionCount').textContent = requiredSelectionCount;
 startGame();

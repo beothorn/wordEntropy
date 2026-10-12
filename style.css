@@ -18,7 +18,7 @@ button:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid
 .play-layout { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr); gap: 28px; align-items: start; }
 .board-panel { background: var(--paper); border-radius: 22px; padding: 24px; box-shadow: 0 12px 35px #2d1e780c; }
 .board-heading { margin-bottom: 18px; } .board-heading span:last-child { color: var(--olive); }
-#game { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px; }
+#game { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
 .cell { aspect-ratio: 1; min-width: 0; padding: 0; border: 1px solid #9d9e9240; border-radius: 9px; background: #abb2a533; font-size: clamp(18px, 2.5vw, 26px); font-weight: 600; transition: transform .16s, background .16s, color .16s, box-shadow .16s; }
 @media (hover: hover) { .cell:hover:not(:disabled) { background: #abb2a570; transform: translateY(-2px); } }
 .cell.selected { background: var(--ink); color: var(--paper); border-color: var(--ink); box-shadow: 0 3px 8px #2d1e7826; transform: translateY(-2px); }
